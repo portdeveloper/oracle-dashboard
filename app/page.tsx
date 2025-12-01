@@ -106,7 +106,7 @@ function HistoryModal({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const isMonOracle = oracleName.includes("(MON)");
-  const priceDecimals = isMonOracle ? 4 : 2;
+  const priceDecimals = isMonOracle ? 6 : 2;
 
   useEffect(() => {
     fetch(`/api/oracles/history?oracle=${encodeURIComponent(oracleName)}&limit=50`)
@@ -553,7 +553,7 @@ export default function Home() {
                           rank={index + 1}
                           onViewHistory={() => setSelectedOracle(oracle.name)}
                           updateTimestamps={monUpdateTimestamps[oracle.name] || []}
-                          priceDecimals={4}
+                          priceDecimals={6}
                         />
                       ))}
                     </tbody>
