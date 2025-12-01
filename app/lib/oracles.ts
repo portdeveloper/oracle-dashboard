@@ -37,6 +37,8 @@ export const STORK_CONTRACT = "0xacC0a0cF13571d30B4b8637996F5D6D774d4fd62" as co
 export const STORK_BTC_USD_ID = "0x7404e3d104ea7841c3d9e6fd20adfe99b4ad586bc08d8f3bd3afef894cf184de" as const;
 export const SUPRA_CONTRACT = "0x58e158c74DF7Ad6396C0dcbadc4878faC9e93d57" as const;
 export const SUPRA_BTC_USD_PAIR_ID = 18n; // BTC/USD pair ID
+export const SWITCHBOARD_CONTRACT = "0x63B27c427F7a1528e4CF9b2d2C6802F88b78FC09" as const;
+export const SWITCHBOARD_BTC_USD_FEED_ID = "0x4cd1cad962425681af07b9254b7d804de3ca3446fbfd1371bb258d2c75059812" as const;
 
 // Chainlink ABI (minimal - just what we need)
 export const chainlinkAbi = parseAbi([
@@ -67,6 +69,11 @@ export const storkAbi = parseAbi([
 // Supra ABI (minimal)
 export const supraAbi = parseAbi([
   "function getSvalue(uint256 _pairIndex) external view returns ((uint256 round, uint256 decimals, uint256 time, uint256 price))",
+]);
+
+// Switchboard ABI (minimal)
+export const switchboardAbi = parseAbi([
+  "function latestUpdate(bytes32 aggregatorId) external view returns ((int128 result, uint128 timestamp))",
 ]);
 
 export interface OracleData {
@@ -260,6 +267,27 @@ export async function fetchSupraData(): Promise<OracleData> {
   };
 }
 
+export async function fetchSwitchboardData(): Promise<OracleData> {
+  const result = await client.readContract({
+    address: SWITCHBOARD_CONTRACT,
+    abi: switchboardAbi,
+    functionName: "latestUpdate",
+    args: [SWITCHBOARD_BTC_USD_FEED_ID],
+  });
+
+  const { result: price, timestamp } = result;
+  // Switchboard uses 18 decimals (result is decimal * 10^18)
+  const formattedPrice = Number(price) / Math.pow(10, 18);
+
+  return {
+    name: "Switchboard",
+    price: formattedPrice,
+    updatedAt: Number(timestamp),
+    decimals: 18,
+    rawPrice: price.toString(),
+  };
+}
+
 export async function fetchAllOracles(): Promise<{
   chainlink: OracleData;
   pyth: OracleData;
@@ -269,8 +297,9 @@ export async function fetchAllOracles(): Promise<{
   redstone: OracleData;
   stork: OracleData;
   supra: OracleData;
+  switchboard: OracleData;
 }> {
-  const [chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra] = await Promise.all([
+  const [chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra, switchboard] = await Promise.all([
     fetchChainlinkData(),
     fetchPythData(),
     fetchChronicleData(),
@@ -279,7 +308,8 @@ export async function fetchAllOracles(): Promise<{
     fetchRedstoneData(),
     fetchStorkData(),
     fetchSupraData(),
+    fetchSwitchboardData(),
   ]);
 
-  return { chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra };
+  return { chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra, switchboard };
 }

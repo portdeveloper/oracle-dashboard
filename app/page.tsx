@@ -354,22 +354,6 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
-
-            {/* Switchboard Note */}
-            <div className="mt-6 p-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/50">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                <span className="font-semibold">Switchboard</span> (0x63B27c427F7a1528e4CF9b2d2C6802F88b78FC09) - Couldn&apos;t figure out how to get the price feed ID. If you figure it out, please{" "}
-                <a
-                  href="https://github.com/portdeveloper/oracle-dashboard/pulls"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-zinc-700 dark:hover:text-zinc-300"
-                >
-                  open a PR
-                </a>
-                !
-              </p>
-            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-64">
