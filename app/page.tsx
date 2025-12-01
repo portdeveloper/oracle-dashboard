@@ -1,65 +1,390 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+interface OracleData {
+  name: string;
+  price: number;
+  updatedAt: number;
+  decimals: number;
+  rawPrice: string;
+  updateCount?: number;
+  lastChangeAt?: number | null;
+}
+
+interface HistoryEntry {
+  id: number;
+  oracleName: string;
+  price: number;
+  updatedAt: number;
+  recordedAt: number;
+  decimals: number;
+  rawPrice: string;
+}
+
+interface OracleResponse {
+  oracles: OracleData[];
+  fetchedAt: number;
+}
+
+function formatPrice(price: number): string {
+  return price.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatTimeSince(timestamp: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const diff = now - timestamp;
+
+  if (diff < 0) return "just now";
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s ago`;
+  return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m ago`;
+}
+
+function formatDateTime(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleString();
+}
+
+function HistoryModal({
+  oracleName,
+  onClose,
+}: {
+  oracleName: string;
+  onClose: () => void;
+}) {
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/oracles/history?oracle=${encodeURIComponent(oracleName)}&limit=50`)
+      .then((res) => res.json())
+      .then((data) => {
+        setHistory(data.history || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [oracleName]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+          <h2 className="text-xl font-bold">{oracleName} History</h2>
+          <button
+            onClick={onClose}
+            className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 text-2xl leading-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4">
+          {loading ? (
+            <p className="text-center text-zinc-500">Loading history...</p>
+          ) : history.length === 0 ? (
+            <p className="text-center text-zinc-500">No history available yet</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-white dark:bg-zinc-900">
+                <tr className="text-left text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
+                  <th className="pb-2 font-medium">Price</th>
+                  <th className="pb-2 font-medium">Oracle Time</th>
+                  <th className="pb-2 font-medium">Recorded</th>
+                  <th className="pb-2 font-medium text-right">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((entry, index) => {
+                  const prevEntry = history[index + 1];
+                  const priceChange = prevEntry
+                    ? ((entry.price - prevEntry.price) / prevEntry.price) * 100
+                    : 0;
+
+                  return (
+                    <tr
+                      key={entry.id}
+                      className="border-b border-zinc-100 dark:border-zinc-800"
+                    >
+                      <td className="py-2 font-mono font-medium">
+                        {formatPrice(entry.price)}
+                      </td>
+                      <td className="py-2 text-zinc-600 dark:text-zinc-400">
+                        {formatDateTime(entry.updatedAt)}
+                      </td>
+                      <td className="py-2 text-zinc-500 dark:text-zinc-500 text-xs">
+                        {formatTimeSince(entry.recordedAt)}
+                      </td>
+                      <td
+                        className={`py-2 text-right font-mono ${
+                          priceChange > 0
+                            ? "text-green-500"
+                            : priceChange < 0
+                            ? "text-red-500"
+                            : "text-zinc-400"
+                        }`}
+                      >
+                        {priceChange !== 0 && (
+                          <>
+                            {priceChange > 0 ? "+" : ""}
+                            {priceChange.toFixed(4)}%
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
+          Showing last {history.length} updates
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OracleRow({
+  data,
+  currentTime,
+  referencePrice,
+  rank,
+  onViewHistory,
+}: {
+  data: OracleData;
+  currentTime: number;
+  referencePrice?: number;
+  rank: number;
+  onViewHistory: () => void;
+}) {
+  const timeSinceUpdate = currentTime - data.updatedAt;
+  const isStale = timeSinceUpdate > 60;
+  const deviation = referencePrice
+    ? ((data.price - referencePrice) / referencePrice) * 100
+    : null;
+
+  return (
+    <tr className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+      {/* Rank */}
+      <td className="py-4 pl-4">
+        <div className="w-8 h-8 rounded-full bg-zinc-800 dark:bg-zinc-200 text-white dark:text-black text-sm font-bold flex items-center justify-center">
+          {rank}
+        </div>
+      </td>
+
+      {/* Oracle Name & Status */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isStale ? "bg-yellow-500" : "bg-green-500"
+            } animate-pulse`}
+          />
+          <span className="font-semibold text-lg">{data.name}</span>
+        </div>
+      </td>
+
+      {/* Price */}
+      <td className="py-4 px-4">
+        <div>
+          <p className="text-xl font-mono font-bold">{formatPrice(data.price)}</p>
+          {deviation !== null && (
+            <p
+              className={`text-xs ${
+                Math.abs(deviation) > 0.1
+                  ? deviation > 0
+                    ? "text-green-500"
+                    : "text-red-500"
+                  : "text-zinc-500"
+              }`}
+            >
+              {deviation >= 0 ? "+" : ""}
+              {deviation.toFixed(3)}% vs ref
+            </p>
+          )}
+        </div>
+      </td>
+
+      {/* Time Since Update */}
+      <td className="py-4 px-4">
+        <p
+          className={`text-2xl font-mono font-bold ${
+            timeSinceUpdate > 30
+              ? timeSinceUpdate > 60
+                ? "text-red-500"
+                : "text-yellow-500"
+              : "text-green-500"
+          }`}
+        >
+          {timeSinceUpdate}s
+        </p>
+      </td>
+
+      {/* Updates & Action */}
+      <td className="py-4 pr-4 text-right">
+        {data.updateCount !== undefined && data.updateCount > 0 && (
+          <button
+            onClick={onViewHistory}
+            className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 px-3 py-1 border border-zinc-200 dark:border-zinc-700 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {data.updateCount} updates
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
 
 export default function Home() {
+  const [data, setData] = useState<OracleResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
+  const [binancePrice, setBinancePrice] = useState<number | null>(null);
+  const [selectedOracle, setSelectedOracle] = useState<string | null>(null);
+
+  const fetchOracles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/oracles");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    }
+  }, []);
+
+  const fetchBinance = useCallback(async () => {
+    try {
+      const res = await fetch(
+        "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+      );
+      if (!res.ok) throw new Error("Failed to fetch Binance");
+      const json = await res.json();
+      setBinancePrice(parseFloat(json.price));
+    } catch (e) {
+      console.error("Binance error:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOracles();
+    fetchBinance();
+
+    const oracleInterval = setInterval(fetchOracles, 1000);
+    const binanceInterval = setInterval(fetchBinance, 1000);
+    const timeInterval = setInterval(() => {
+      setCurrentTime(Math.floor(Date.now() / 1000));
+    }, 1000);
+
+    return () => {
+      clearInterval(oracleInterval);
+      clearInterval(binanceInterval);
+      clearInterval(timeInterval);
+    };
+  }, [fetchOracles, fetchBinance]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-zinc-50 dark:bg-black p-8">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Oracle Monitor</h1>
+          <p className="text-zinc-500 dark:text-zinc-400">
+            BTC/USD on Monad Mainnet • Polling every 1s • Sorted by freshness
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        </header>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400">
+            Error: {error}
+          </div>
+        )}
+
+        {data ? (
+          <>
+            {/* Reference Price Bar */}
+            <div className="mb-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                  Reference (Binance):
+                </span>
+                <span className="text-2xl font-mono font-bold">
+                  {binancePrice ? formatPrice(binancePrice) : "Loading..."}
+                </span>
+              </div>
+              <span className="text-xs text-zinc-400">Real-time</span>
+            </div>
+
+            {/* Oracle Table */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 text-left text-sm text-zinc-500 dark:text-zinc-400">
+                    <th className="py-3 pl-4 font-medium w-16">#</th>
+                    <th className="py-3 px-4 font-medium">Oracle</th>
+                    <th className="py-3 px-4 font-medium">Price</th>
+                    <th className="py-3 px-4 font-medium">Freshness</th>
+                    <th className="py-3 pr-4 font-medium text-right">History</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.oracles.map((oracle, index) => (
+                    <OracleRow
+                      key={oracle.name}
+                      data={oracle}
+                      currentTime={currentTime}
+                      referencePrice={binancePrice ?? undefined}
+                      rank={index + 1}
+                      onViewHistory={() => setSelectedOracle(oracle.name)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Switchboard Note */}
+            <div className="mt-6 p-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/50">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="font-semibold">Switchboard</span> (0x63B27c427F7a1528e4CF9b2d2C6802F88b78FC09) - Couldn&apos;t figure out how to get the price feed ID. If you figure it out, please{" "}
+                <a
+                  href="https://github.com/portdeveloper/oracle-dashboard/pulls"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-zinc-700 dark:hover:text-zinc-300"
+                >
+                  open a PR
+                </a>
+                !
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-zinc-500">Loading oracle data...</p>
+          </div>
+        )}
+
+      </div>
+
+      {selectedOracle && (
+        <HistoryModal
+          oracleName={selectedOracle}
+          onClose={() => setSelectedOracle(null)}
+        />
+      )}
     </div>
   );
 }
