@@ -368,10 +368,9 @@ export default function Home() {
       setMonUpdateTimestamps((prev) => {
         const updated = { ...prev };
         for (const oracle of json.oracles) {
-          const key = `MON-${oracle.name}`;
-          const existing = updated[key] || [];
+          const existing = updated[oracle.name] || [];
           if (existing.length === 0 || existing[existing.length - 1] !== oracle.updatedAt) {
-            updated[key] = [...existing.slice(-29), oracle.updatedAt];
+            updated[oracle.name] = [...existing.slice(-29), oracle.updatedAt];
           }
         }
         return updated;
@@ -524,8 +523,8 @@ export default function Home() {
                           data={oracle}
                           currentTime={currentTime}
                           rank={index + 1}
-                          onViewHistory={() => {}}
-                          updateTimestamps={monUpdateTimestamps[`MON-${oracle.name}`] || []}
+                          onViewHistory={() => setSelectedOracle(oracle.name)}
+                          updateTimestamps={monUpdateTimestamps[oracle.name] || []}
                         />
                       ))}
                     </tbody>
