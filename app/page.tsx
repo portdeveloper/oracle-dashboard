@@ -418,11 +418,35 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch initial history for MON/USD frequency chart
+  const fetchInitialMonHistory = useCallback(async () => {
+    try {
+      const oracles = ["Chainlink (MON)", "Pyth (MON)", "Chronicle (MON)", "Orocle (MON)", "RedStone (MON)", "Stork (MON)", "Supra (MON)"];
+      const historyPromises = oracles.map(async (name) => {
+        const res = await fetch(`/api/oracles/history?oracle=${encodeURIComponent(name)}&limit=30`);
+        const data = await res.json();
+        return { name, history: data.history || [] };
+      });
+
+      const results = await Promise.all(historyPromises);
+      const timestampMap: Record<string, number[]> = {};
+
+      for (const { name, history } of results) {
+        timestampMap[name] = history.map((h: HistoryEntry) => h.updatedAt).reverse();
+      }
+
+      setMonUpdateTimestamps(timestampMap);
+    } catch (e) {
+      console.error("Failed to fetch MON history:", e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOracles();
     fetchMonOracles();
     fetchBinance();
     fetchInitialHistory();
+    fetchInitialMonHistory();
 
     const oracleInterval = setInterval(fetchOracles, 1000);
     const monOracleInterval = setInterval(fetchMonOracles, 1000);
@@ -437,7 +461,7 @@ export default function Home() {
       clearInterval(binanceInterval);
       clearInterval(timeInterval);
     };
-  }, [fetchOracles, fetchMonOracles, fetchBinance, fetchInitialHistory]);
+  }, [fetchOracles, fetchMonOracles, fetchBinance, fetchInitialHistory, fetchInitialMonHistory]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black p-8">
