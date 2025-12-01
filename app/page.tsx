@@ -28,12 +28,12 @@ interface OracleResponse {
   fetchedAt: number;
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number, decimals: number = 2): string {
   return price.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   });
 }
 
@@ -105,6 +105,8 @@ function HistoryModal({
 }) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMonOracle = oracleName.includes("(MON)");
+  const priceDecimals = isMonOracle ? 4 : 2;
 
   useEffect(() => {
     fetch(`/api/oracles/history?oracle=${encodeURIComponent(oracleName)}&limit=50`)
@@ -163,7 +165,7 @@ function HistoryModal({
                       className="border-b border-zinc-100 dark:border-zinc-800"
                     >
                       <td className="py-2 font-mono font-medium">
-                        {formatPrice(entry.price)}
+                        {formatPrice(entry.price, priceDecimals)}
                       </td>
                       <td className="py-2 text-zinc-600 dark:text-zinc-400">
                         {formatDateTime(entry.updatedAt)}
@@ -210,6 +212,7 @@ function OracleRow({
   rank,
   onViewHistory,
   updateTimestamps,
+  priceDecimals = 2,
 }: {
   data: OracleData;
   currentTime: number;
@@ -217,6 +220,7 @@ function OracleRow({
   rank: number;
   onViewHistory: () => void;
   updateTimestamps: number[];
+  priceDecimals?: number;
 }) {
   const timeSinceUpdate = currentTime - data.updatedAt;
   const isStale = timeSinceUpdate > 60;
@@ -269,7 +273,7 @@ function OracleRow({
       {/* Price */}
       <td className="py-4 px-4">
         <div>
-          <p className="text-xl font-mono font-bold">{formatPrice(data.price)}</p>
+          <p className="text-xl font-mono font-bold">{formatPrice(data.price, priceDecimals)}</p>
           {deviation !== null && (
             <p
               className={`text-xs ${
@@ -549,6 +553,7 @@ export default function Home() {
                           rank={index + 1}
                           onViewHistory={() => setSelectedOracle(oracle.name)}
                           updateTimestamps={monUpdateTimestamps[oracle.name] || []}
+                          priceDecimals={4}
                         />
                       ))}
                     </tbody>
