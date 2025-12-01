@@ -358,7 +358,7 @@ export default function Home() {
             {/* Switchboard Note */}
             <div className="mt-6 p-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/50">
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                <span className="font-semibold">Switchboard</span> (0x63B27C427F7A1528e4cF9B2D2c6802F88b78FC09) - Pull-based oracle with no active data. The feed exists but requires someone to push updates before reading. If you can help activate it, please{" "}
+                <span className="font-semibold">Switchboard</span> (0x63B27C427F7A1528e4cF9B2D2c6802F88b78FC09) - I couldn&apos;t get this one working properly. If you know how to integrate it, please{" "}
                 <a
                   href="https://github.com/portdeveloper/oracle-dashboard/pulls"
                   target="_blank"
