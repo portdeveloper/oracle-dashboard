@@ -50,6 +50,51 @@ function formatDateTime(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleString();
 }
 
+// Shows update frequency - each bar represents time gap between updates
+function UpdateFrequencyChart({ timestamps }: { timestamps: number[] }) {
+  if (!timestamps || timestamps.length < 2) {
+    return (
+      <div className="w-28 h-8 flex items-end gap-px">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="flex-1 bg-zinc-200 dark:bg-zinc-700 rounded-sm h-2" />
+        ))}
+      </div>
+    );
+  }
+
+  // Calculate intervals between consecutive updates (in seconds)
+  const intervals: number[] = [];
+  for (let i = 1; i < timestamps.length; i++) {
+    intervals.push(timestamps[i] - timestamps[i - 1]);
+  }
+
+  // Get last 15 intervals for display
+  const displayIntervals = intervals.slice(-15);
+  const maxInterval = Math.max(...displayIntervals, 60); // Cap at 60s for scale
+
+  return (
+    <div className="w-28 h-8 flex items-end gap-px" title="Update intervals (shorter = more frequent)">
+      {displayIntervals.map((interval, i) => {
+        // Invert: shorter interval = taller bar (more frequent updates are good)
+        const normalizedHeight = Math.max(0.1, 1 - Math.min(interval, maxInterval) / maxInterval);
+        const color = interval <= 10 ? "#22c55e" : interval <= 30 ? "#eab308" : "#ef4444";
+
+        return (
+          <div
+            key={i}
+            className="flex-1 rounded-sm transition-all"
+            style={{
+              height: `${normalizedHeight * 100}%`,
+              backgroundColor: color,
+              minHeight: "2px",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function HistoryModal({
   oracleName,
   onClose,
@@ -163,12 +208,14 @@ function OracleRow({
   referencePrice,
   rank,
   onViewHistory,
+  updateTimestamps,
 }: {
   data: OracleData;
   currentTime: number;
   referencePrice?: number;
   rank: number;
   onViewHistory: () => void;
+  updateTimestamps: number[];
 }) {
   const timeSinceUpdate = currentTime - data.updatedAt;
   const isStale = timeSinceUpdate > 60;
@@ -218,6 +265,11 @@ function OracleRow({
         </div>
       </td>
 
+      {/* Update Frequency Chart */}
+      <td className="py-4 px-4">
+        <UpdateFrequencyChart timestamps={updateTimestamps} />
+      </td>
+
       {/* Time Since Update */}
       <td className="py-4 px-4">
         <p
@@ -254,6 +306,7 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [binancePrice, setBinancePrice] = useState<number | null>(null);
   const [selectedOracle, setSelectedOracle] = useState<string | null>(null);
+  const [updateTimestamps, setUpdateTimestamps] = useState<Record<string, number[]>>({});
 
   const fetchOracles = useCallback(async () => {
     try {
@@ -262,6 +315,19 @@ export default function Home() {
       const json = await res.json();
       setData(json);
       setError(null);
+
+      // Update timestamps for frequency chart (keep last 30 data points)
+      setUpdateTimestamps((prev) => {
+        const updated = { ...prev };
+        for (const oracle of json.oracles) {
+          const existing = updated[oracle.name] || [];
+          // Only add if updatedAt changed (new push from oracle)
+          if (existing.length === 0 || existing[existing.length - 1] !== oracle.updatedAt) {
+            updated[oracle.name] = [...existing.slice(-29), oracle.updatedAt];
+          }
+        }
+        return updated;
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     }
@@ -280,9 +346,35 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch initial history for frequency chart
+  const fetchInitialHistory = useCallback(async () => {
+    try {
+      const oracles = ["Chainlink", "Pyth", "Chronicle", "eOracle", "Orocle", "RedStone", "Stork", "Supra"];
+      const historyPromises = oracles.map(async (name) => {
+        const res = await fetch(`/api/oracles/history?oracle=${encodeURIComponent(name)}&limit=30`);
+        const data = await res.json();
+        return { name, history: data.history || [] };
+      });
+
+      const results = await Promise.all(historyPromises);
+      const timestampMap: Record<string, number[]> = {};
+
+      for (const { name, history } of results) {
+        // History is returned newest first, so reverse it for the chart
+        // Use updatedAt (oracle timestamp) not recordedAt
+        timestampMap[name] = history.map((h: HistoryEntry) => h.updatedAt).reverse();
+      }
+
+      setUpdateTimestamps(timestampMap);
+    } catch (e) {
+      console.error("Failed to fetch history:", e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOracles();
     fetchBinance();
+    fetchInitialHistory();
 
     const oracleInterval = setInterval(fetchOracles, 1000);
     const binanceInterval = setInterval(fetchBinance, 1000);
@@ -295,7 +387,7 @@ export default function Home() {
       clearInterval(binanceInterval);
       clearInterval(timeInterval);
     };
-  }, [fetchOracles, fetchBinance]);
+  }, [fetchOracles, fetchBinance, fetchInitialHistory]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black p-8">
@@ -336,6 +428,7 @@ export default function Home() {
                     <th className="py-3 pl-4 font-medium w-16">#</th>
                     <th className="py-3 px-4 font-medium">Oracle</th>
                     <th className="py-3 px-4 font-medium">Price</th>
+                    <th className="py-3 px-4 font-medium">Push Frequency</th>
                     <th className="py-3 px-4 font-medium">Freshness</th>
                     <th className="py-3 pr-4 font-medium text-right">History</th>
                   </tr>
@@ -349,6 +442,7 @@ export default function Home() {
                       referencePrice={binancePrice ?? undefined}
                       rank={index + 1}
                       onViewHistory={() => setSelectedOracle(oracle.name)}
+                      updateTimestamps={updateTimestamps[oracle.name] || []}
                     />
                   ))}
                 </tbody>
