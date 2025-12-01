@@ -10,6 +10,7 @@ interface OracleData {
   rawPrice: string;
   updateCount?: number;
   lastChangeAt?: number | null;
+  unsupported?: boolean;
 }
 
 interface HistoryEntry {
@@ -219,9 +220,30 @@ function OracleRow({
 }) {
   const timeSinceUpdate = currentTime - data.updatedAt;
   const isStale = timeSinceUpdate > 60;
-  const deviation = referencePrice
+  const deviation = referencePrice && !data.unsupported
     ? ((data.price - referencePrice) / referencePrice) * 100
     : null;
+
+  if (data.unsupported) {
+    return (
+      <tr className="border-b border-zinc-100 dark:border-zinc-800 opacity-50">
+        <td className="py-4 pl-4">
+          <div className="w-8 h-8 rounded-full bg-zinc-400 dark:bg-zinc-600 text-white dark:text-black text-sm font-bold flex items-center justify-center">
+            {rank}
+          </div>
+        </td>
+        <td className="py-4 px-4">
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-zinc-400" />
+            <span className="font-semibold text-lg">{data.name}</span>
+          </div>
+        </td>
+        <td className="py-4 px-4" colSpan={4}>
+          <p className="text-zinc-500 italic">Not supported</p>
+        </td>
+      </tr>
+    );
+  }
 
   return (
     <tr className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
@@ -302,11 +324,13 @@ function OracleRow({
 
 export default function Home() {
   const [data, setData] = useState<OracleResponse | null>(null);
+  const [monData, setMonData] = useState<OracleResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [binancePrice, setBinancePrice] = useState<number | null>(null);
   const [selectedOracle, setSelectedOracle] = useState<string | null>(null);
   const [updateTimestamps, setUpdateTimestamps] = useState<Record<string, number[]>>({});
+  const [monUpdateTimestamps, setMonUpdateTimestamps] = useState<Record<string, number[]>>({});
 
   const fetchOracles = useCallback(async () => {
     try {
@@ -330,6 +354,30 @@ export default function Home() {
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
+    }
+  }, []);
+
+  const fetchMonOracles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/oracles/mon");
+      if (!res.ok) throw new Error("Failed to fetch MON/USD");
+      const json = await res.json();
+      setMonData(json);
+
+      // Update timestamps for frequency chart
+      setMonUpdateTimestamps((prev) => {
+        const updated = { ...prev };
+        for (const oracle of json.oracles) {
+          const key = `MON-${oracle.name}`;
+          const existing = updated[key] || [];
+          if (existing.length === 0 || existing[existing.length - 1] !== oracle.updatedAt) {
+            updated[key] = [...existing.slice(-29), oracle.updatedAt];
+          }
+        }
+        return updated;
+      });
+    } catch (e) {
+      console.error("MON/USD fetch error:", e);
     }
   }, []);
 
@@ -373,10 +421,12 @@ export default function Home() {
 
   useEffect(() => {
     fetchOracles();
+    fetchMonOracles();
     fetchBinance();
     fetchInitialHistory();
 
     const oracleInterval = setInterval(fetchOracles, 1000);
+    const monOracleInterval = setInterval(fetchMonOracles, 1000);
     const binanceInterval = setInterval(fetchBinance, 1000);
     const timeInterval = setInterval(() => {
       setCurrentTime(Math.floor(Date.now() / 1000));
@@ -384,10 +434,11 @@ export default function Home() {
 
     return () => {
       clearInterval(oracleInterval);
+      clearInterval(monOracleInterval);
       clearInterval(binanceInterval);
       clearInterval(timeInterval);
     };
-  }, [fetchOracles, fetchBinance, fetchInitialHistory]);
+  }, [fetchOracles, fetchMonOracles, fetchBinance, fetchInitialHistory]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black p-8">
@@ -395,7 +446,7 @@ export default function Home() {
         <header className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Oracle Monitor</h1>
           <p className="text-zinc-500 dark:text-zinc-400">
-            BTC/USD on Monad Mainnet • Polling every 1s • Sorted by freshness
+            Monad Mainnet • Polling every 1s • Sorted by freshness
           </p>
         </header>
 
@@ -420,7 +471,8 @@ export default function Home() {
               <span className="text-xs text-zinc-400">Real-time</span>
             </div>
 
-            {/* Oracle Table */}
+            {/* BTC/USD Section */}
+            <h2 className="text-xl font-bold mb-4">BTC/USD</h2>
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
               <table className="w-full">
                 <thead>
@@ -448,6 +500,39 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
+
+            {/* MON/USD Section */}
+            {monData && (
+              <div className="mt-8">
+                <h2 className="text-xl font-bold mb-4">MON/USD</h2>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-zinc-200 dark:border-zinc-800 text-left text-sm text-zinc-500 dark:text-zinc-400">
+                        <th className="py-3 pl-4 font-medium w-16">#</th>
+                        <th className="py-3 px-4 font-medium">Oracle</th>
+                        <th className="py-3 px-4 font-medium">Price</th>
+                        <th className="py-3 px-4 font-medium">Push Frequency</th>
+                        <th className="py-3 px-4 font-medium">Freshness</th>
+                        <th className="py-3 pr-4 font-medium text-right">History</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monData.oracles.map((oracle, index) => (
+                        <OracleRow
+                          key={`mon-${oracle.name}`}
+                          data={oracle}
+                          currentTime={currentTime}
+                          rank={index + 1}
+                          onViewHistory={() => {}}
+                          updateTimestamps={monUpdateTimestamps[`MON-${oracle.name}`] || []}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Switchboard Note */}
             <div className="mt-6 p-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/50">
