@@ -2,7 +2,7 @@ import { createPublicClient, http, parseAbi } from "viem";
 import { defineChain } from "viem";
 
 // Define Monad Mainnet
-export const monadMainnet = defineChain({
+const monadMainnet = defineChain({
   id: 10143,
   name: "Monad Mainnet",
   nativeCurrency: {
@@ -18,62 +18,62 @@ export const monadMainnet = defineChain({
 });
 
 // Create client
-export const client = createPublicClient({
+const client = createPublicClient({
   chain: monadMainnet,
   transport: http(),
 });
 
 // Contract addresses
-export const CHAINLINK_BTC_USD = "0xc1d4C3331635184fA4C3c22fb92211B2Ac9E0546" as const;
-export const CHAINLINK_MON_USD = "0xBcD78f76005B7515837af6b50c7C52BCf73822fb" as const;
-export const PYTH_CONTRACT = "0x2880aB155794e7179c9eE2e38200202908C17B43" as const;
-export const PYTH_BTC_USD_FEED_ID = "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43" as const;
-export const PYTH_MON_USD_FEED_ID = "0x31491744e2dbf6df7fcf4ac0820d18a609b49076d45066d3568424e62f686cd1" as const;
-export const CHRONICLE_BTC_USD = "0xECd09Ce60c069384D6B91656A841097F1181A59e" as const;
-export const CHRONICLE_MON_USD = "0x936a444C983347FFBfe3F26D1497CAbfA2BfE271" as const;
-export const EORACLE_BTC_USD = "0xEB0CDef56e02A334B7eaB620560aDa727bB994f6" as const;
-export const OROCLE_CONTRACT = "0x78291455bf33aA5437f9D69Ff63E0B1C09833429" as const;
+const CHAINLINK_BTC_USD = "0xc1d4C3331635184fA4C3c22fb92211B2Ac9E0546" as const;
+const CHAINLINK_MON_USD = "0xBcD78f76005B7515837af6b50c7C52BCf73822fb" as const;
+const PYTH_CONTRACT = "0x2880aB155794e7179c9eE2e38200202908C17B43" as const;
+const PYTH_BTC_USD_FEED_ID = "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43" as const;
+const PYTH_MON_USD_FEED_ID = "0x31491744e2dbf6df7fcf4ac0820d18a609b49076d45066d3568424e62f686cd1" as const;
+const CHRONICLE_BTC_USD = "0xECd09Ce60c069384D6B91656A841097F1181A59e" as const;
+const CHRONICLE_MON_USD = "0x936a444C983347FFBfe3F26D1497CAbfA2BfE271" as const;
+const EORACLE_BTC_USD = "0xEB0CDef56e02A334B7eaB620560aDa727bB994f6" as const;
+const OROCLE_CONTRACT = "0x78291455bf33aA5437f9D69Ff63E0B1C09833429" as const;
 // BTC identifier for Orocle: "BTC" as bytes20
-export const OROCLE_BTC_IDENTIFIER = "0x4254430000000000000000000000000000000000" as const;
+const OROCLE_BTC_IDENTIFIER = "0x4254430000000000000000000000000000000000" as const;
 // MON identifier for Orocle: "MON" as bytes20
-export const OROCLE_MON_IDENTIFIER = "0x4D4F4E0000000000000000000000000000000000" as const;
-export const REDSTONE_BTC_USD = "0xED2B1ca5D7E246f615c2291De309643D41FeC97e" as const;
-export const REDSTONE_MON_USD = "0x1C9582E87eD6E99bc23EC0e6Eb52eE9d7C0D6bcd" as const;
-export const STORK_CONTRACT = "0xacC0a0cF13571d30B4b8637996F5D6D774d4fd62" as const;
-export const STORK_BTC_USD_ID = "0x7404e3d104ea7841c3d9e6fd20adfe99b4ad586bc08d8f3bd3afef894cf184de" as const;
-export const STORK_MON_USD_ID = "0xa4f6b07ae0c89e3f3cc03c1badcc3e9adffdf7206bafcd56d142979800887385" as const;
-export const SUPRA_CONTRACT = "0x58e158c74DF7Ad6396C0dcbadc4878faC9e93d57" as const;
-export const SUPRA_BTC_USD_PAIR_ID = 18n; // BTC/USD pair ID
-export const SUPRA_MON_USDT_PAIR_ID = 569n; // MON/USDT pair ID
+const OROCLE_MON_IDENTIFIER = "0x4D4F4E0000000000000000000000000000000000" as const;
+const REDSTONE_BTC_USD = "0xED2B1ca5D7E246f615c2291De309643D41FeC97e" as const;
+const REDSTONE_MON_USD = "0x1C9582E87eD6E99bc23EC0e6Eb52eE9d7C0D6bcd" as const;
+const STORK_CONTRACT = "0xacC0a0cF13571d30B4b8637996F5D6D774d4fd62" as const;
+const STORK_BTC_USD_ID = "0x7404e3d104ea7841c3d9e6fd20adfe99b4ad586bc08d8f3bd3afef894cf184de" as const;
+const STORK_MON_USD_ID = "0xa4f6b07ae0c89e3f3cc03c1badcc3e9adffdf7206bafcd56d142979800887385" as const;
+const SUPRA_CONTRACT = "0x58e158c74DF7Ad6396C0dcbadc4878faC9e93d57" as const;
+const SUPRA_BTC_USD_PAIR_ID = 18n; // BTC/USD pair ID
+const SUPRA_MON_USDT_PAIR_ID = 569n; // MON/USDT pair ID
 
 // Chainlink ABI (minimal - just what we need)
-export const chainlinkAbi = parseAbi([
+const chainlinkAbi = parseAbi([
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
   "function decimals() external view returns (uint8)",
 ]);
 
 // Pyth ABI (minimal)
-export const pythAbi = parseAbi([
+const pythAbi = parseAbi([
   "function getPrice(bytes32 id) external view returns ((int64 price, uint64 conf, int32 expo, uint256 publishTime))",
 ]);
 
 // Chronicle ABI (minimal)
-export const chronicleAbi = parseAbi([
+const chronicleAbi = parseAbi([
   "function readWithAge() external view returns (uint256 value, uint256 age)",
 ]);
 
 // Orocle ABI (minimal)
-export const orocleAbi = parseAbi([
+const orocleAbi = parseAbi([
   "function getLatestRound(uint32 appId, bytes20 identifier) external view returns (uint64 round, uint256 lastUpdate, uint256 data)",
 ]);
 
 // Stork ABI (minimal)
-export const storkAbi = parseAbi([
+const storkAbi = parseAbi([
   "function getTemporalNumericValueV1(bytes32 id) external view returns ((uint256 timestampNs, int192 quantizedValue))",
 ]);
 
 // Supra ABI (minimal)
-export const supraAbi = parseAbi([
+const supraAbi = parseAbi([
   "function getSvalue(uint256 _pairIndex) external view returns ((uint256 round, uint256 decimals, uint256 time, uint256 price))",
 ]);
 
@@ -87,7 +87,7 @@ export interface OracleData {
   unsupported?: boolean;
 }
 
-export async function fetchChainlinkData(): Promise<OracleData> {
+async function fetchChainlinkData(): Promise<OracleData> {
   const [roundData, decimals] = await Promise.all([
     client.readContract({
       address: CHAINLINK_BTC_USD,
@@ -268,7 +268,7 @@ export async function fetchOrocleMonUsd(): Promise<OracleData> {
   };
 }
 
-export async function fetchPythData(): Promise<OracleData> {
+async function fetchPythData(): Promise<OracleData> {
   const priceData = await client.readContract({
     address: PYTH_CONTRACT,
     abi: pythAbi,
@@ -288,7 +288,7 @@ export async function fetchPythData(): Promise<OracleData> {
   };
 }
 
-export async function fetchChronicleData(): Promise<OracleData> {
+async function fetchChronicleData(): Promise<OracleData> {
   const [value, age] = await client.readContract({
     address: CHRONICLE_BTC_USD,
     abi: chronicleAbi,
@@ -307,7 +307,7 @@ export async function fetchChronicleData(): Promise<OracleData> {
   };
 }
 
-export async function fetchEOracleData(): Promise<OracleData> {
+async function fetchEOracleData(): Promise<OracleData> {
   // eOracle is Chainlink-compatible (AggregatorV3Interface)
   const [roundData, decimals] = await Promise.all([
     client.readContract({
@@ -334,7 +334,7 @@ export async function fetchEOracleData(): Promise<OracleData> {
   };
 }
 
-export async function fetchOrocleData(): Promise<OracleData> {
+async function fetchOrocleData(): Promise<OracleData> {
   const [, lastUpdate, data] = await client.readContract({
     address: OROCLE_CONTRACT,
     abi: orocleAbi,
@@ -354,7 +354,7 @@ export async function fetchOrocleData(): Promise<OracleData> {
   };
 }
 
-export async function fetchRedstoneData(): Promise<OracleData> {
+async function fetchRedstoneData(): Promise<OracleData> {
   // Try Chainlink-compatible interface first
   const [roundData, decimals] = await Promise.all([
     client.readContract({
@@ -381,7 +381,7 @@ export async function fetchRedstoneData(): Promise<OracleData> {
   };
 }
 
-export async function fetchStorkData(): Promise<OracleData> {
+async function fetchStorkData(): Promise<OracleData> {
   const result = await client.readContract({
     address: STORK_CONTRACT,
     abi: storkAbi,
@@ -403,7 +403,7 @@ export async function fetchStorkData(): Promise<OracleData> {
   };
 }
 
-export async function fetchSupraData(): Promise<OracleData> {
+async function fetchSupraData(): Promise<OracleData> {
   const result = await client.readContract({
     address: SUPRA_CONTRACT,
     abi: supraAbi,

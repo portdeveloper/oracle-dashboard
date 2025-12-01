@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, serial, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, real, serial } from "drizzle-orm/pg-core";
 
 export const oracleUpdates = pgTable("oracle_updates", {
   id: serial("id").primaryKey(),
@@ -20,6 +20,3 @@ export const oracleLatest = pgTable("oracle_latest", {
   lastChangeAt: integer("last_change_at"),
   updateCount: integer("update_count").default(0),
 });
-
-export type OracleUpdate = typeof oracleUpdates.$inferSelect;
-export type OracleLatest = typeof oracleLatest.$inferSelect;
