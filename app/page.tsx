@@ -354,6 +354,22 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
+
+            {/* Switchboard Note */}
+            <div className="mt-6 p-4 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900/50">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="font-semibold">Switchboard</span> (0x63B27C427F7A1528e4cF9B2D2c6802F88b78FC09) - Pull-based oracle with no active data. The feed exists but requires someone to push updates before reading. If you can help activate it, please{" "}
+                <a
+                  href="https://github.com/portdeveloper/oracle-dashboard/pulls"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-zinc-700 dark:hover:text-zinc-300"
+                >
+                  open a PR
+                </a>
+                !
+              </p>
+            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-64">
