@@ -7,6 +7,7 @@ import {
   fetchSupraMonUsd,
   fetchChronicleMonUsd,
   fetchOrocleMonUsd,
+  fetchSwitchboardMonUsd,
   type OracleData
 } from "@/app/lib/oracles";
 import { recordOracleData, getLatestOracles } from "@/app/db";
@@ -23,7 +24,7 @@ function withMonPrefix(oracle: OracleData): OracleData {
 
 export async function GET() {
   try {
-    const [chainlink, pyth, redstone, stork, supra, chronicle, orocle] = await Promise.all([
+    const [chainlink, pyth, redstone, stork, supra, chronicle, orocle, switchboard] = await Promise.all([
       fetchChainlinkMonUsd(),
       fetchPythMonUsd(),
       fetchRedstoneMonUsd(),
@@ -31,6 +32,7 @@ export async function GET() {
       fetchSupraMonUsd(),
       fetchChronicleMonUsd(),
       fetchOrocleMonUsd(),
+      fetchSwitchboardMonUsd(),
     ]);
 
     // eOracle doesn't support MON/USD
@@ -44,7 +46,7 @@ export async function GET() {
     };
 
     // Add MON prefix for storage/display distinction
-    const oraclesWithPrefix = [chainlink, pyth, chronicle, orocle, redstone, stork, supra].map(withMonPrefix);
+    const oraclesWithPrefix = [chainlink, pyth, chronicle, orocle, redstone, stork, supra, switchboard].map(withMonPrefix);
     const eoracleWithPrefix = { ...eoracle, name: "eOracle (MON)" };
 
     const oracles: OracleData[] = [...oraclesWithPrefix, eoracleWithPrefix];

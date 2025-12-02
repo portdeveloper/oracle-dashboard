@@ -400,7 +400,7 @@ export default function Home() {
   // Fetch initial history for frequency chart
   const fetchInitialHistory = useCallback(async () => {
     try {
-      const oracles = ["Chainlink", "Pyth", "Chronicle", "eOracle", "Orocle", "RedStone", "Stork", "Supra"];
+      const oracles = ["Chainlink", "Pyth", "Chronicle", "eOracle", "Orocle", "RedStone", "Stork", "Supra", "Switchboard"];
       const historyPromises = oracles.map(async (name) => {
         const res = await fetch(`/api/oracles/history?oracle=${encodeURIComponent(name)}&limit=30`);
         const data = await res.json();
@@ -425,7 +425,7 @@ export default function Home() {
   // Fetch initial history for MON/USD frequency chart
   const fetchInitialMonHistory = useCallback(async () => {
     try {
-      const oracles = ["Chainlink (MON)", "Pyth (MON)", "Chronicle (MON)", "Orocle (MON)", "RedStone (MON)", "Stork (MON)", "Supra (MON)"];
+      const oracles = ["Chainlink (MON)", "Pyth (MON)", "Chronicle (MON)", "Orocle (MON)", "RedStone (MON)", "Stork (MON)", "Supra (MON)", "Switchboard (MON)"];
       const historyPromises = oracles.map(async (name) => {
         const res = await fetch(`/api/oracles/history?oracle=${encodeURIComponent(name)}&limit=30`);
         const data = await res.json();
