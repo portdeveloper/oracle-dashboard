@@ -592,6 +592,26 @@ export default function Home() {
           onClose={() => setSelectedOracle(null)}
         />
       )}
+
+      <footer className="max-w-5xl mx-auto mt-12 pt-6 border-t border-zinc-200 dark:border-zinc-800 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p>
+          <a
+            href="/addresses"
+            className="underline hover:text-zinc-700 dark:hover:text-zinc-300"
+          >
+            Oracle Addresses
+          </a>
+          {" · "}
+          <a
+            href="https://github.com/portdeveloper/oracle-dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-zinc-700 dark:hover:text-zinc-300"
+          >
+            GitHub
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
