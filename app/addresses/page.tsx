@@ -80,12 +80,6 @@ const btcOracles = [
     address: "18",
     type: "pair_id",
   },
-  {
-    name: "Switchboard",
-    label: "SWITCHBOARD_BTC_USD_FEED",
-    address: "4cd1cad962425681af07b9254b7d804de3ca3446fbfd1371bb258d2c75059812",
-    type: "feed_id",
-  },
 ];
 
 const monOracles = [
@@ -131,12 +125,6 @@ const monOracles = [
     label: "SUPRA_MON_USDT_PAIR_ID",
     address: "569",
     type: "pair_id",
-  },
-  {
-    name: "Switchboard",
-    label: "SWITCHBOARD_MON_USD_FEED",
-    address: "2d5f0a89b34b1df59445c51474b6ec540e975b790207bfa4b4c4512bfe63ec47",
-    type: "feed_id",
   },
 ];
 
@@ -247,18 +235,6 @@ export default function AddressesPage() {
               <span className="text-zinc-500 dark:text-zinc-400 w-24">RPC URL:</span>
               <code className="bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-xs">
                 https://rpc.monad.xyz
-              </code>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
-          <h2 className="text-xl font-bold mb-4">External APIs</h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-4">
-              <span className="text-zinc-500 dark:text-zinc-400 w-40">Switchboard Crossbar:</span>
-              <code className="bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded text-xs">
-                https://crossbar.switchboard.xyz
               </code>
             </div>
           </div>

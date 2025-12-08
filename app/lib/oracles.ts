@@ -45,8 +45,6 @@ const STORK_MON_USD_ID = "0xa4f6b07ae0c89e3f3cc03c1badcc3e9adffdf7206bafcd56d142
 const SUPRA_CONTRACT = "0x58e158c74DF7Ad6396C0dcbadc4878faC9e93d57" as const;
 const SUPRA_BTC_USD_PAIR_ID = 18n; // BTC/USD pair ID
 const SUPRA_MON_USDT_PAIR_ID = 569n; // MON/USDT pair ID
-const SWITCHBOARD_BTC_USD_FEED = "4cd1cad962425681af07b9254b7d804de3ca3446fbfd1371bb258d2c75059812" as const;
-const SWITCHBOARD_MON_USD_FEED = "2d5f0a89b34b1df59445c51474b6ec540e975b790207bfa4b4c4512bfe63ec47" as const;
 
 // Chainlink ABI (minimal - just what we need)
 const chainlinkAbi = parseAbi([
@@ -79,8 +77,6 @@ const supraAbi = parseAbi([
   "function getSvalue(uint256 _pairIndex) external view returns ((uint256 round, uint256 decimals, uint256 time, uint256 price))",
 ]);
 
-// Switchboard Crossbar API URL
-const SWITCHBOARD_CROSSBAR_URL = "https://crossbar.switchboard.xyz";
 
 
 export interface OracleData {
@@ -430,54 +426,6 @@ async function fetchSupraData(): Promise<OracleData> {
   };
 }
 
-interface SwitchboardSimulateResponse {
-  feedHash: string;
-  results: string[];
-  receipts: null;
-}
-
-async function fetchSwitchboardData(): Promise<OracleData> {
-  const response = await fetch(`${SWITCHBOARD_CROSSBAR_URL}/simulate/${SWITCHBOARD_BTC_USD_FEED}`);
-  const data: SwitchboardSimulateResponse[] = await response.json();
-
-  if (!data || data.length === 0 || !data[0].results || data[0].results.length === 0) {
-    throw new Error("No Switchboard data available");
-  }
-
-  const price = parseFloat(data[0].results[0]);
-  // Crossbar returns prices directly, use current time as timestamp
-  const updatedAt = Math.floor(Date.now() / 1000);
-
-  return {
-    name: "Switchboard",
-    price,
-    updatedAt,
-    decimals: 8,
-    rawPrice: data[0].results[0],
-  };
-}
-
-export async function fetchSwitchboardMonUsd(): Promise<OracleData> {
-  const response = await fetch(`${SWITCHBOARD_CROSSBAR_URL}/simulate/${SWITCHBOARD_MON_USD_FEED}`);
-  const data: SwitchboardSimulateResponse[] = await response.json();
-
-  if (!data || data.length === 0 || !data[0].results || data[0].results.length === 0) {
-    throw new Error("No Switchboard MON/USD data available");
-  }
-
-  const price = parseFloat(data[0].results[0]);
-  // Crossbar returns prices directly, use current time as timestamp
-  const updatedAt = Math.floor(Date.now() / 1000);
-
-  return {
-    name: "Switchboard",
-    price,
-    updatedAt,
-    decimals: 8,
-    rawPrice: data[0].results[0],
-  };
-}
-
 export async function fetchAllOracles(): Promise<{
   chainlink: OracleData;
   pyth: OracleData;
@@ -487,9 +435,8 @@ export async function fetchAllOracles(): Promise<{
   redstone: OracleData;
   stork: OracleData;
   supra: OracleData;
-  switchboard: OracleData;
 }> {
-  const [chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra, switchboard] = await Promise.all([
+  const [chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra] = await Promise.all([
     fetchChainlinkData(),
     fetchPythData(),
     fetchChronicleData(),
@@ -498,8 +445,7 @@ export async function fetchAllOracles(): Promise<{
     fetchRedstoneData(),
     fetchStorkData(),
     fetchSupraData(),
-    fetchSwitchboardData(),
   ]);
 
-  return { chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra, switchboard };
+  return { chainlink, pyth, chronicle, eoracle, orocle, redstone, stork, supra };
 }
